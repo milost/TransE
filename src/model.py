@@ -3,7 +3,7 @@ import timeit
 import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
-from dataset import KnowledgeGraph
+from .dataset import KnowledgeGraph
 
 
 class TransE:
