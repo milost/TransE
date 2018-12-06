@@ -1,5 +1,7 @@
 absl-py==0.6.1
 astor==0.7.1
+certifi==2018.11.29
+Click==7.0
 gast==0.2.0
 grpcio==1.17.0
 h5py==2.8.0
@@ -7,6 +9,7 @@ isodate==0.6.0
 Keras-Applications==1.0.6
 Keras-Preprocessing==1.0.5
 Markdown==3.0.1
+marshmallow==2.16.3
 marshmallow-enum==1.4.1
 numpy==1.15.4
 pandas==0.23.4
