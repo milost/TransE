@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
-import click
 import csv
-import scipy
-import networkx as nx
+from tqdm import tqdm
 from pathlib import Path
-from rdflib import Graph, URIRef, Literal
+
+import click
+import networkx as nx
+import scipy
+from rdflib import Graph, Literal
 from rdflib.extras.external_graph_libs import rdflib_to_networkx_graph
 
 
@@ -55,10 +57,47 @@ def preprocess():
     pass
 
 
+@preprocess.command(help="Create index files from knowledge base dump (ttl)")
+@click.argument('file')
+def build_index_files(file):
+    entities = set()
+    relations = set()
+
+    in_file = Path(file)
+    in_dir = in_file.parent
+    filename = in_file.name.replace(in_file.suffix, '')
+
+    print("Reading RDF graph ...")
+    g = Graph()
+    g.parse(str(in_file), format="nt")
+    for triple in g:
+        if not isinstance(triple[2], Literal):
+            entities.add(str(triple[0]))
+            entities.add(str(triple[2]))
+            relations.add(str(triple[1]))
+    del g
+
+    # sort entities and relations
+    print('Sorting entities and relations')
+    entities = sorted(entities)
+    relations = sorted(relations)
+
+    print("Converting RDF graph to data files ...")
+    with open(f'{in_dir}/{filename}_entity_idx.csv', 'w', newline='\n') as entity_file, \
+            open(f'{in_dir}/{filename}_relations_idx.csv', 'w') as relations_file:
+
+        entity_writer = csv.writer(entity_file, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        relations_writer = csv.writer(relations_file, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+        for idx, elem in tqdm(enumerate(entities), desc='Writing entities', total=len(entities)):
+            entity_writer.writerow([elem, idx, ])
+        for idx, elem in tqdm(enumerate(relations), desc='Writing relations', total=len(relations)):
+            relations_writer.writerow([elem, idx, ])
+
+
 @preprocess.command(help="Create scipy sparse matrix")
 @click.argument('file')
 def to_sparse_matrix(file):
-
     in_file = Path(file)
     in_dir = in_file.parent
     filename = in_file.name.replace(in_file.suffix, '')
@@ -82,5 +121,3 @@ def to_sparse_matrix(file):
 if __name__ == '__main__':
     # to_sparse_matrix()
     cli()
-
-
