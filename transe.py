@@ -11,42 +11,6 @@ from rdflib import Graph, Literal
 from rdflib.extras.external_graph_libs import rdflib_to_networkx_graph
 
 
-# def transform(entity):
-#     if isinstance(entity, URIRef):
-#         return entity
-#     elif isinstance(entity, Literal):
-#         if entity.datatype:
-#             return f'{entity}^^{entity.datatype}'
-#         else:
-#             return f'{entity}'
-
-
-# if __name__ == '__main__':
-#     entities = set()
-#     relations = set()
-#     g = Graph()
-#     g.parse("../data/dbpedia_small.ttl", format="nt")
-#     for stmt in g:
-#         entities.add(transform(stmt[0]))
-#         entities.add(transform(stmt[2]))
-#         relations.add(transform(stmt[1]))
-#
-#     with open('../data/entity_idx.csv', 'w', newline='\n') as csvfile:
-#         csv_writer = csv.writer(csvfile, delimiter='\t',
-#                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#         for idx, elem in enumerate(entities):
-#             csv_writer.writerow([elem, idx, ])
-#
-#     with open('../data/relation_idx.csv', 'w', newline='\n') as csvfile:
-#         csv_writer = csv.writer(csvfile, delimiter='\t',
-#                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#         for idx, elem in enumerate(relations):
-#             csv_writer.writerow([elem, idx, ])
-#
-#     print(len(entities))
-#     print(len(relations))
-
-
 @click.group()
 def cli():
     pass
@@ -118,6 +82,34 @@ def to_sparse_matrix(file):
     scipy.sparse.save_npz(outfile, graph_matrix)
 
 
+@preprocess.command(help="Convert ttl file into tab separated file")
+@click.argument('file')
+@click.option('--entities_only', is_flag=True, help='removes all literals from the generated file')
+def to_tab_separated(file, entities_only):
+    """
+    Converts a given ttl file into a tsv file.
+    :param file: the ttl file to be converted
+    :param entities_only: if True all literals will be removed.
+    """
+    in_file = Path(file)
+    in_dir = in_file.parent
+    filename = in_file.name.replace(in_file.suffix, '')
+
+    print("Reading RDF graph ...")
+    g = Graph()
+    g.parse(str(in_file), format="nt")
+
+    print("Converting RDF graph to tab separated file format ...")
+    with open(f'{in_dir}/{filename}_triples.tsv', 'w', newline='\n') as f:
+        writer = csv.writer(f, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        if entities_only:
+            for s, p, o in tqdm(g, desc='Writing entities', total=len(g)):
+                if not isinstance(o, Literal):
+                    writer.writerow([s, p, o])
+        else:
+            for s, p, o in tqdm(g, desc='Writing entities', total=len(g)):
+                writer.writerow([s, p, o])
+
+
 if __name__ == '__main__':
-    # to_sparse_matrix()
     cli()
